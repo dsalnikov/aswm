@@ -1,5 +1,6 @@
 from myhdl import Signal, always, intbv, instances, delay, Simulation, instance, StopSimulation
 
+from hdl.misc import Register
 
 def Multiplier(clk, x, w, wx):
 
@@ -16,21 +17,6 @@ def Adder(clk, a, b, outp):
         outp.next = a + b
 
     return AdderLogic
-
-#TODO: create separete utils module
-def Register(clk, inp, outp):
-    """
-    Syncronic register
-    :param clk: clock
-    :param inp: input
-    :param outp: output
-    """
-
-    @always(clk.posedge)
-    def RegisterLogic():
-        outp.next = inp
-
-    return RegisterLogic
 
 def FracDiv(clk, num, den, q):
 
