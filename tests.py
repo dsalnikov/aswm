@@ -6,7 +6,7 @@ from myhdl import *
 
 from aswm_ref.aswm_fix import weighted_mean
 from hdl.aswm import WMean
-
+from hdl.misc import sqrt
 
 def wmean_testbench():
     path = "img/lena.png"
@@ -95,7 +95,38 @@ def wmean_testbench():
     return clock_gen, stimulus, cmp_1, monitor
 
 
+def sqrt_testbench():
+    clock = Signal(bool(0))
+    a = Signal(intbv(9, min=0, max=2**32))
+    b = Signal(intbv(0, min=0, max=2**16))
+
+    sqrt_inst = sqrt(clock, a, b)
+
+    half_period = delay(10)
+
+    @always(half_period)
+    def clock_gen():
+        clock.next = not clock
+
+    @instance
+    def stimulus():
+        # a.next = intbv(4)
+        for i in range(0, 20):
+            yield clock.posedge
+
+        raise StopSimulation
+
+    @instance
+    def monitor():
+        # wait for pipeline filling
+        for i in range(0, 20):
+            yield clock.posedge
+            print(b)
+
+    return clock_gen, stimulus, sqrt_inst, monitor
+
+
 if __name__ == "__main__":
-    tb = wmean_testbench()
-    # tb = traceSignals(wmean_testbench)
+    #tb = sqrt_testbench()
+    tb = traceSignals(sqrt_testbench)
     Simulation(tb).run()

@@ -36,16 +36,7 @@ def aswm(imgn):
         for j in range(1, rows - 1):
             weights = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 
-            window = []
-            window.append(img[i - 1, j - 1])
-            window.append(img[i, j - 1])
-            window.append(img[i + 1, j - 1])
-            window.append(img[i - 1, j])
-            window.append(img[i, j])
-            window.append(img[i + 1, j])
-            window.append(img[i - 1, j + 1])
-            window.append(img[i, j + 1])
-            window.append(img[i + 1, j + 1])
+            window = img[i - 1:i + 2, j - 1:j + 2].reshape(-1).tolist()
 
             mean = weighted_mean(weights, window, 9)
 
