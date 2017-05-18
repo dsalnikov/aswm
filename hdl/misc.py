@@ -95,7 +95,8 @@ def sqrt(clk, d, q):
 
     @always(clk.posedge)
     def stage_0():
-        res = intbv(d[32:30] - 1)[3:]
+        res = modbv(0, min=-2**2, max=2**2)
+        res[:] = d[32:30] - 1
         msb_0.next = not res[2]
         res_0.next = res[2:0]
 
@@ -111,13 +112,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_0
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**3, max=2**3)
+
         if msb_0 == 0:
-            sum_res = intbv(sum_a + sum_b)[4:]
+            sum_res[:] = sum_a + sum_b
 
             msb_1.next = not sum_res[3]
             res_1.next = sum_res[3:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[4:]
+            sum_res[:] = sum_a - sum_b
 
             msb_1.next = not sum_res[3]
             res_1.next = sum_res[3:0]
@@ -135,13 +138,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_1
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**4, max=2**4)
+
         if msb_1 == 0:
-            sum_res = intbv(sum_a + sum_b)[5:]
+            sum_res[:] = sum_a + sum_b
 
             msb_2.next = not sum_res[4]
             res_2.next = sum_res[4:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[5:]
+            sum_res[:] = sum_a - sum_b
 
             msb_2.next = not sum_res[4]
             res_2.next = sum_res[4:0]
@@ -160,13 +165,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_2
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**5, max=2**5)
+
         if msb_2 == 0:
-            sum_res = intbv(sum_a + sum_b)[6:]
+            sum_res[:] = sum_a + sum_b
 
             msb_3.next = not sum_res[5]
             res_3.next = sum_res[5:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[6:]
+            sum_res[:] = sum_a - sum_b
 
             msb_3.next = not sum_res[5]
             res_3.next = sum_res[5:0]
@@ -186,13 +193,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_3
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**6, max=2**6)
+
         if msb_3 == 0:
-            sum_res = intbv(sum_a + sum_b)[7:]
+            sum_res[:] = sum_a + sum_b
 
             msb_4.next = not sum_res[6]
             res_4.next = sum_res[6:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[7:]
+            sum_res[:] = sum_a - sum_b
 
             msb_4.next = not sum_res[6]
             res_4.next = sum_res[6:0]
@@ -213,13 +222,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_4
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**7, max=2**7)
+
         if msb_4 == 0:
-            sum_res = intbv(sum_a + sum_b)[8:]
+            sum_res[:] = sum_a + sum_b
 
             msb_5.next = not sum_res[7]
             res_5.next = sum_res[7:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[8:]
+            sum_res[:] = sum_a - sum_b
 
             msb_5.next = not sum_res[7]
             res_5.next = sum_res[7:0]
@@ -241,13 +252,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_5
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**8, max=2**8)
+
         if msb_5 == 0:
-            sum_res = intbv(sum_a + sum_b)[9:]
+            sum_res[:] = sum_a + sum_b
 
             msb_6.next = not sum_res[8]
             res_6.next = sum_res[8:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[9:]
+            sum_res[:] = sum_a - sum_b
 
             msb_6.next = not sum_res[8]
             res_6.next = sum_res[8:0]
@@ -270,13 +283,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_6
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**9, max=2**9)
+
         if msb_6 == 0:
-            sum_res = intbv(sum_a + sum_b)[10:]
+            sum_res[:] = sum_a + sum_b
 
             msb_7.next = not sum_res[9]
             res_7.next = sum_res[9:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[10:]
+            sum_res[:] = sum_a - sum_b
 
             msb_7.next = not sum_res[9]
             res_7.next = sum_res[9:0]
@@ -300,13 +315,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_7
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**10, max=2**10)
+
         if msb_7 == 0:
-            sum_res = intbv(sum_a + sum_b)[11:]
+            sum_res[:] = sum_a + sum_b
 
             msb_8.next = not sum_res[10]
             res_8.next = sum_res[10:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[11:]
+            sum_res[:] = sum_a - sum_b
 
             msb_8.next = not sum_res[10]
             res_8.next = sum_res[10:0]
@@ -331,13 +348,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_8
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**11, max=2**11)
+
         if msb_8 == 0:
-            sum_res = intbv(sum_a + sum_b)[12:]
+            sum_res[:] = sum_a + sum_b
 
             msb_9.next = not sum_res[11]
             res_9.next = sum_res[11:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[12:]
+            sum_res[:] = sum_a - sum_b
 
             msb_9.next = not sum_res[11]
             res_9.next = sum_res[11:0]
@@ -363,13 +382,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_9
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**12, max=2**12)
+
         if msb_9 == 0:
-            sum_res = intbv(sum_a + sum_b)[13:]
+            sum_res[:] = sum_a + sum_b
 
             msb_10.next = not sum_res[12]
             res_10.next = sum_res[12:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[13:]
+            sum_res[:] = sum_a - sum_b
 
             msb_10.next = not sum_res[12]
             res_10.next = sum_res[12:0]
@@ -396,13 +417,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_10
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**13, max=2**13)
+
         if msb_10 == 0:
-            sum_res = intbv(sum_a + sum_b)[14:]
+            sum_res[:] = sum_a + sum_b
 
             msb_11.next = not sum_res[13]
             res_11.next = sum_res[13:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[14:]
+            sum_res[:] = sum_a - sum_b
 
             msb_11.next = not sum_res[13]
             res_11.next = sum_res[13:0]
@@ -430,13 +453,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_11
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**14, max=2**14)
+
         if msb_11 == 0:
-            sum_res = intbv(sum_a + sum_b)[15:]
+            sum_res[:] = sum_a + sum_b
 
             msb_12.next = not sum_res[14]
             res_12.next = sum_res[14:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[15:]
+            sum_res[:] = sum_a - sum_b
 
             msb_12.next = not sum_res[14]
             res_12.next = sum_res[14:0]
@@ -465,13 +490,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_12
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**15, max=2**15)
+
         if msb_12 == 0:
-            sum_res = intbv(sum_a + sum_b)[16:]
+            sum_res[:] = sum_a + sum_b
 
             msb_13.next = not sum_res[15]
             res_13.next = sum_res[15:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[16:]
+            sum_res[:] = sum_a - sum_b
 
             msb_13.next = not sum_res[15]
             res_13.next = sum_res[15:0]
@@ -501,13 +528,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_13
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**16, max=2**16)
+
         if msb_13 == 0:
-            sum_res = intbv(sum_a + sum_b)[17:]
+            sum_res[:] = sum_a + sum_b
 
             msb_14.next = not sum_res[16]
             res_14.next = sum_res[16:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[17:]
+            sum_res[:] = sum_a - sum_b
 
             msb_14.next = not sum_res[16]
             res_14.next = sum_res[16:0]
@@ -538,13 +567,15 @@ def sqrt(clk, d, q):
         sum_b[1] = not msb_14
         sum_b[0] = 1
 
+        sum_res = modbv(0, min=-2**17, max=2**17)
+
         if msb_14 == 0:
-            sum_res = intbv(sum_a + sum_b)[18:]
+            sum_res[:] = sum_a + sum_b
 
             msb_15.next = not sum_res[17]
             res_15.next = sum_res[17:0]
         else:
-            sum_res = intbv(sum_a - sum_b)[18:]
+            sum_res[:] = sum_a - sum_b
 
             msb_15.next = not sum_res[17]
             res_15.next = sum_res[17:0]
@@ -554,6 +585,6 @@ def sqrt(clk, d, q):
 
 if __name__ == "__main__":
     clk = Signal(bool(0))
-    a = Signal(intbv(0)[31:])
+    a = Signal(intbv(0)[32:])
     b = Signal(intbv(0)[16:])
     inst = toVHDL(sqrt, clk, a, b)
