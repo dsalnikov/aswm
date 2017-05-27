@@ -24,4 +24,4 @@ def sqrt(d):
     return q
 
 if __name__ == "__main__":
-    print sqrt(9)
+    print(sqrt(9))

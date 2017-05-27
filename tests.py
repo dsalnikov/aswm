@@ -8,6 +8,8 @@ from aswm_ref.aswm_fix import weighted_mean
 from hdl.aswm import WMean
 from hdl.misc import sqrt
 
+from random import randint
+
 def wmean_testbench():
     path = "img/lena.png"
     img = imread(path, as_grey=True)
@@ -97,7 +99,7 @@ def wmean_testbench():
 
 def sqrt_testbench():
     clock = Signal(bool(0))
-    a = Signal(intbv(9, min=0, max=2**32))
+    a = Signal(intbv(0, min=0, max=2**32))
     b = Signal(intbv(0, min=0, max=2**16))
 
     sqrt_inst = sqrt(clock, a, b)
@@ -110,16 +112,26 @@ def sqrt_testbench():
 
     @instance
     def stimulus():
-        # a.next = intbv(4)
+        yield clock.posedge
+        a.next = 9
+        yield clock.posedge
+        a.next = 25
+        yield clock.posedge
+        a.next = 17
+
         for i in range(0, 20):
             yield clock.posedge
+
+            a.next = 4
+
+            #a.next = randint(0, 2**16)
 
         raise StopSimulation
 
     @instance
     def monitor():
         # wait for pipeline filling
-        for i in range(0, 20):
+        for i in range(0, 25):
             yield clock.posedge
             print(b)
 
