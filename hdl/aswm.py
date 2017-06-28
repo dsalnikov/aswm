@@ -1,6 +1,6 @@
 from myhdl import Signal, always, intbv, instances, delay, Simulation, instance, StopSimulation
 
-from hdl.misc import Register
+from hdl.misc import Register, Sub
 
 def Multiplier(clk, x, w, wx):
 
@@ -91,5 +91,28 @@ def WMean(clk,
 
     # Calculate weighted mean
     div_inst = FracDiv(clk, wacc, acc, wmean)
+
+    return instances()
+
+def WeightsEstimate(clk,
+                    mean,
+                    x0, x1, x2, x3, x4, x5, x6, x7, x8,
+                    w0, w1, w2, w3, w4, w5, w6, w7, w8):
+
+    x = [x0, x1, x2, x3, x4, x5, x6, x7, x8]
+    w = [w0, w1, w2, w3, w4, w5, w6, w7, w8]
+
+    sub_0 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(9)]
+
+    sub_inst = []
+    for i in range(9):
+        sub_inst.append(Sub(clk, x[i], mean, sub_0[i]))
+
+    div_num = Signal(intbv(0x100, min=w0.min, max=w0.max))
+
+    div_inst = []
+    for i in range(9):
+        div_inst.append(FracDiv(clk, div_num, sub_0[i], w[i]))
+
 
     return instances()

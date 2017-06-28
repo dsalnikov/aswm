@@ -5,7 +5,7 @@ from skimage import img_as_ubyte
 from myhdl import *
 
 from aswm_ref.aswm_fix import weighted_mean
-from hdl.aswm import WMean
+from hdl.aswm import WMean, WeightsEstimate
 from hdl.misc import sqrt
 
 from random import randint
@@ -136,6 +136,36 @@ def sqrt_testbench():
             print(b)
 
     return clock_gen, stimulus, sqrt_inst, monitor
+
+
+def weights_estimate_testbench():
+    clock = Signal(bool(0))
+
+    x = [Signal(intbv(0x00010000, min=0, max=2**8)) for _ in range(9)]
+    w = [Signal(intbv(0, min=0, max=2**32)) for _ in range(9)]
+    wmean = Signal(intbv(0, min=0, max=2**32))
+
+    w_inst = WeightsEstimate(clock, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8],
+                             w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8],
+                             wmean)
+
+
+    half_period = delay(10)
+
+    @always(half_period)
+    def clock_gen():
+        clock.next = not clock
+
+    @instance
+    def stimulus():
+
+        raise StopSimulation
+
+    @instance
+    def monitor():
+        pass
+
+    return clock_gen, stimulus, w_inst, monitor
 
 
 if __name__ == "__main__":

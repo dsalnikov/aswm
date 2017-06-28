@@ -15,6 +15,12 @@ def Register(clk, inp, outp):
 
     return RegisterLogic
 
+def Sub(clk, a, b, q):
+
+    @always(clk.posedge)
+    def SubLogic():
+        q.next = a - b
+
 def sqrt(clk, d, q):
     """
     Pipelined SQRT implementation
