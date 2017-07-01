@@ -15,11 +15,28 @@ def Register(clk, inp, outp):
 
     return RegisterLogic
 
-def Sub(clk, a, b, q):
+def Sub2(clk, a, b, q, nq, sign):
 
     @always(clk.posedge)
     def SubLogic():
-        q.next = a - b
+        sub = modbv(0)[32:]
+        sub[:] = (a << 16) - b
+        q.next = sub
+        sign.next = sub[31]
+        nq.next = b - (a << 16)
+
+    return SubLogic
+
+def Mux2(clk, s, a, b, q):
+
+    @always(clk.posedge)
+    def Abs2Logic():
+        if s:
+            q.next = b
+        else:
+            q.next = a
+
+    return Abs2Logic
 
 def sqrt(clk, d, q):
     """

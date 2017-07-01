@@ -149,14 +149,13 @@ def sqrt_testbench():
 def weights_estimate_testbench():
     clock = Signal(bool(0))
 
-    x = [Signal(intbv(0x00010000, min=0, max=2**8)) for _ in range(9)]
-    w = [Signal(intbv(0, min=0, max=2**32)) for _ in range(9)]
-    wmean = Signal(intbv(0, min=0, max=2**32))
+    x = [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
+    w = [Signal(modbv(0)[32:]) for _ in range(9)]
+    wmean = Signal(modbv(0x8eaaaa)[32:])
 
-    w_inst = WeightsEstimate(clock, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8],
-                             w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8],
-                             wmean)
-
+    w_inst = WeightsEstimate(clock, wmean,
+                             x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8],
+                             w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8])
 
     half_period = delay(10)
 
@@ -166,12 +165,29 @@ def weights_estimate_testbench():
 
     @instance
     def stimulus():
+        for i in range(0, 17):
+            yield clock.posedge
+
+            x[0].next = int(126)
+            x[1].next = int(131)
+            x[2].next = int(128)
+            x[3].next = int(129)
+            x[4].next = int(130)
+            x[5].next = int(255)
+            x[6].next = int(130)
+            x[7].next = int(123)
+            x[8].next = int(132)
 
         raise StopSimulation
 
     @instance
     def monitor():
-        pass
+        for i in range(0, 17):
+            yield clock.posedge
+            # win [126, 131, 128, 129, 130, 255, 130, 123, 132]
+            # mean '0x8eaaaaL'
+            # weights [7816L, 11138L, 8876L, 9520L, 10266L, 1164L, 10266L, 6630L, 12172L]
+            # print(w)
 
     return clock_gen, stimulus, w_inst, monitor
 
@@ -184,3 +200,8 @@ if __name__ == "__main__":
     print("testing wmean ...")
     wmean_tb = wmean_testbench()
     Simulation(wmean_tb).run()
+
+    print("testing weights estimate ...")
+    west_tb = weights_estimate_testbench()
+    Simulation(west_tb).run()
+

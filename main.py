@@ -5,7 +5,7 @@ from skimage import img_as_ubyte
 import matplotlib.pyplot as plt
 import numpy as np
 
-from aswm_ref.aswm import aswm
+from aswm_ref.aswm_fix import aswm
 
 
 

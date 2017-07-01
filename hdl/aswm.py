@@ -1,6 +1,6 @@
-from myhdl import Signal, always, intbv, instances, delay, Simulation, instance, StopSimulation
+from myhdl import *
 
-from hdl.misc import Register, Sub
+from hdl.misc import Register, Sub2, Mux2
 
 def Multiplier(clk, x, w, wx):
 
@@ -25,6 +25,15 @@ def FracDiv(clk, num, den, q):
         q.next = ((num << 15) // den) << 1
 
     return FracDivLogic
+
+def FracDiv2(clk, num, den, q):
+
+    @always(clk.posedge)
+    def FracDiv2Logic():
+        q.next = ((num << 16) // den) << 1
+
+    return FracDiv2Logic
+
 
 def WMean(clk,
           x0, x1, x2, x3, x4, x5, x6, x7, x8,
@@ -95,24 +104,39 @@ def WMean(clk,
     return instances()
 
 def WeightsEstimate(clk,
-                    mean,
+                    wmean,
                     x0, x1, x2, x3, x4, x5, x6, x7, x8,
                     w0, w1, w2, w3, w4, w5, w6, w7, w8):
 
     x = [x0, x1, x2, x3, x4, x5, x6, x7, x8]
     w = [w0, w1, w2, w3, w4, w5, w6, w7, w8]
 
-    sub_0 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(9)]
+    sub_0 = [Signal(modbv(0, min=w0.min, max=w0.max)) for i in range(9)]
+    sub_1 = [Signal(modbv(0, min=w0.min, max=w0.max)) for i in range(9)]
+    sub_2 = [Signal(modbv(0, min=w0.min, max=w0.max)) for i in range(9)]
+    signs_0 = [Signal(modbv(0)) for i in range(9)]
+
+    add_0 = [Signal(modbv(0x2000, min=w0.min, max=w0.max)) for i in range(9)]
 
     sub_inst = []
     for i in range(9):
-        sub_inst.append(Sub(clk, x[i], mean, sub_0[i]))
+       sub_inst.append(Sub2(clk, x[i], wmean, sub_0[i], sub_1[i], signs_0[i]))
 
-    div_num = Signal(intbv(0x100, min=w0.min, max=w0.max))
+    mux_inst = []
+    for i in range(9):
+        mux_inst.append(Mux2(clk, signs_0[i], sub_0[i], sub_1[i], sub_2[i]))
+
+    add_const = Signal(modbv(0x1FFF, min=w0.min, max=w0.max))
+
+    add_inst = []
+    for i in range(9):
+        add_inst.append(Adder(clk, sub_2[i], add_const, add_0[i]))
+
+    div_num = Signal(intbv(0x10000, min=w0.min, max=w0.max))
 
     div_inst = []
     for i in range(9):
-        div_inst.append(FracDiv(clk, div_num, sub_0[i], w[i]))
+        div_inst.append(FracDiv2(clk, div_num, add_0[i], w[i]))
 
 
     return instances()
