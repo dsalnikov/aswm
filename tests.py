@@ -4,7 +4,7 @@ from skimage import img_as_ubyte
 
 from myhdl import *
 
-from aswm_ref.aswm_fix import weighted_mean
+from aswm_ref.aswm_fix import weighted_mean, F16
 from hdl.aswm import WMean, WeightsEstimate
 from aswm_ref.misc import sqrt as sqrt_ref
 from hdl.aswm import WMean
@@ -108,6 +108,8 @@ def sqrt_testbench():
 
     half_period = delay(10)
 
+    ref_wmean = []
+
     @always(half_period)
     def clock_gen():
         clock.next = not clock
@@ -145,7 +147,6 @@ def sqrt_testbench():
 
     return clock_gen, stimulus, sqrt_inst, monitor
 
-
 def weights_estimate_testbench():
     clock = Signal(bool(0))
 
@@ -159,35 +160,59 @@ def weights_estimate_testbench():
 
     half_period = delay(10)
 
+    mean_ref = 0x8eaaaa
+    weights = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    ref_weights = []
+
     @always(half_period)
     def clock_gen():
         clock.next = not clock
 
     @instance
     def stimulus():
-        for i in range(0, 17):
+        for i in range(0, 1000):
             yield clock.posedge
 
-            x[0].next = int(126)
-            x[1].next = int(131)
-            x[2].next = int(128)
-            x[3].next = int(129)
-            x[4].next = int(130)
-            x[5].next = int(255)
-            x[6].next = int(130)
-            x[7].next = int(123)
-            x[8].next = int(132)
+            window = [254, 185, 71, 8, 222, 225, 230, 50, 51]
+            for i in range(0, 9):
+                window[i] = randint(0, 255)
+
+            x[0].next = int(window[0])
+            x[1].next = int(window[1])
+            x[2].next = int(window[2])
+            x[3].next = int(window[3])
+            x[4].next = int(window[4])
+            x[5].next = int(window[5])
+            x[6].next = int(window[6])
+            x[7].next = int(window[7])
+            x[8].next = int(window[8])
+
+            for l in range(0, 9):
+                x_ref = abs((window[l] << 16) - mean_ref) + F16(0.1)
+                weights[l] = ((F16(1.0) << 16) / x_ref) << 1
+
+            ref_weights.append(weights[:])
+
+        for i in range(0, 6):
+            yield clock.posedge
+
 
         raise StopSimulation
 
     @instance
     def monitor():
-        for i in range(0, 17):
+        # wait for pipeline filling
+        for i in range(0, 5):
             yield clock.posedge
-            # win [126, 131, 128, 129, 130, 255, 130, 123, 132]
-            # mean '0x8eaaaaL'
-            # weights [7816L, 11138L, 8876L, 9520L, 10266L, 1164L, 10266L, 6630L, 12172L]
-            # print(w)
+
+
+        for i in range(0, 1000):
+            yield clock.posedge
+
+            wref = ref_weights.pop(0)
+
+            assert wref == w, "ref != hdl weights estimation"
 
     return clock_gen, stimulus, w_inst, monitor
 

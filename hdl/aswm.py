@@ -126,7 +126,7 @@ def WeightsEstimate(clk,
     for i in range(9):
         mux_inst.append(Mux2(clk, signs_0[i], sub_0[i], sub_1[i], sub_2[i]))
 
-    add_const = Signal(modbv(0x1FFF, min=w0.min, max=w0.max))
+    add_const = Signal(modbv(0x1999, min=w0.min, max=w0.max))
 
     add_inst = []
     for i in range(9):
