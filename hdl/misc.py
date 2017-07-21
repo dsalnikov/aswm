@@ -38,6 +38,30 @@ def Mux2(clk, s, a, b, q):
 
     return Abs2Logic
 
+def Diff(clk, mean, x, q):
+
+    @always(clk.posedge)
+    def DiffLogic():
+        q.next = (x << 16) - mean
+
+    return DiffLogic
+
+def Pow2(clk, a, q):
+
+    @always(clk.posedge)
+    def Pow2Logic():
+        q.next = a * a
+
+    return Pow2Logic
+
+def Mul2(clk, a, b, q):
+
+    @always(clk.posedge)
+    def Mul2Logic():
+        q.next = (a * b) >> 16
+
+    return Mul2Logic
+
 def sqrt(clk, d, q):
     """
     Pipelined SQRT implementation

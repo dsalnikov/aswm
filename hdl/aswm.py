@@ -1,6 +1,5 @@
 from myhdl import *
-
-from hdl.misc import Register, Sub2, Mux2
+from hdl.misc import *
 
 def Multiplier(clk, x, w, wx):
 
@@ -138,5 +137,128 @@ def WeightsEstimate(clk,
     for i in range(9):
         div_inst.append(FracDiv2(clk, div_num, add_0[i], w[i]))
 
+
+    return instances()
+
+
+"""
+def deviation(weights, window, mean, size):
+    acc = 0
+    wacc = 0
+
+    for i in range(0, size):
+        diff = (window[i] << 16) - mean
+        ddiff = frac_mul(diff, diff)
+
+        wacc = wacc + frac_mul(weights[i], ddiff)
+        acc = acc + weights[i]
+
+    return frac_sqrt(frac_div(wacc, acc))
+"""
+
+
+
+def Deviation(clk,
+              w0, w1, w2, w3, w4, w5, w6, w7, w8,
+              win0, win1, win2, win3, win4, win5, win6, win7, win8,
+              wmean,
+              deviation):
+
+    win = [win0, win1, win2, win3, win4, win5, win6, win7, win8]
+    w = [w0, w1, w2, w3, w4, w5, w6, w7, w8]
+
+    diff_l_0 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(9)]
+    diff_l_1 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(9)]
+    wdiff_l_0 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(9)]
+
+    diff_inst_0 = []
+    for i in range(9):
+        diff_inst_0.append(Diff(clk, wmean, win[i], diff_l_0[i]))
+
+    diff_inst_1 = []
+    for i in range(9):
+        diff_inst_1.append(Pow2(clk, diff_l_0[i], diff_l_1[i]))
+
+
+    # w pipeline for 2clks
+    w_delay_l_0 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(9)]
+    w_delay_l_1 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(9)]
+
+    w_delay_regs_inst_0 = []
+    for i in range(9):
+        w_delay_regs_inst_0.append(Register(clk, w[i], w_delay_l_0[i]))
+
+    w_delay_regs_inst_1 = []
+    for i in range(9):
+        w_delay_regs_inst_1.append(Register(clk, w_delay_l_0[i], w_delay_l_1[i]))
+
+
+    wdiff_inst_0 = []
+    for i in range(9):
+        wdiff_inst_0.append(Mul2(clk, diff_l_1[i], w_delay_l_1[i], wdiff_l_0[i]))
+
+
+
+    wacc = Signal(intbv(0, min=w0.min, max=w0.max))
+
+    add_wacc_l_0 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(5)]
+    add_wacc_l_1 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(3)]
+    add_wacc_l_2 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(2)]
+
+    adder_inst_0 = Adder(clk, wdiff_l_0[0], wdiff_l_0[1], add_wacc_l_0[0])
+    adder_inst_1 = Adder(clk, wdiff_l_0[2], wdiff_l_0[3], add_wacc_l_0[1])
+    adder_inst_2 = Adder(clk, wdiff_l_0[4], wdiff_l_0[5], add_wacc_l_0[2])
+    adder_inst_3 = Adder(clk, wdiff_l_0[6], wdiff_l_0[7], add_wacc_l_0[3])
+
+    adder_inst_4 = Adder(clk, add_wacc_l_0[0], add_wacc_l_0[1], add_wacc_l_1[0])
+    adder_inst_5 = Adder(clk, add_wacc_l_0[2], add_wacc_l_0[3], add_wacc_l_1[1])
+
+    adder_inst_6 = Adder(clk, add_wacc_l_1[0], add_wacc_l_1[1], add_wacc_l_2[0])
+
+    adder_inst_7 = Adder(clk, add_wacc_l_2[0], add_wacc_l_2[1], wacc)
+
+    # Registers to pipeline wacc calculation
+    reg_inst_0 = Register(clk, wdiff_l_0[8], add_wacc_l_0[4])
+    reg_inst_1 = Register(clk, add_wacc_l_0[4], add_wacc_l_1[2])
+    reg_inst_2 = Register(clk, add_wacc_l_1[2], add_wacc_l_2[1])
+
+
+    acc = Signal(intbv(0, min=w0.min, max=w0.max))
+
+    add_acc_l_0 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(5)]
+    add_acc_l_1 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(3)]
+    add_acc_l_2 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(2)]
+
+    add_acc_l_3 = Signal(intbv(0, min=w0.min, max=w0.max))
+    add_acc_l_4 = Signal(intbv(0, min=w0.min, max=w0.max))
+    add_acc_l_5 = Signal(intbv(0, min=w0.min, max=w0.max))
+
+    adder_acc_inst_0 = Adder(clk, w[0], w[1], add_acc_l_0[0])
+    adder_acc_inst_1 = Adder(clk, w[2], w[3], add_acc_l_0[1])
+    adder_acc_inst_2 = Adder(clk, w[4], w[5], add_acc_l_0[2])
+    adder_acc_inst_3 = Adder(clk, w[6], w[7], add_acc_l_0[3])
+
+    adder_acc_inst_4 = Adder(clk, add_acc_l_0[0], add_acc_l_0[1], add_acc_l_1[0])
+    adder_acc_inst_5 = Adder(clk, add_acc_l_0[2], add_acc_l_0[3], add_acc_l_1[1])
+
+    adder_acc_inst_6 = Adder(clk, add_acc_l_1[0], add_acc_l_1[1], add_acc_l_2[0])
+
+    adder_acc_inst_7 = Adder(clk, add_acc_l_2[0], add_acc_l_2[1], add_acc_l_3)
+
+
+    # Registers to pipeline acc calculation
+    reg_acc_inst_0 = Register(clk, w[8], add_acc_l_0[4])
+    reg_acc_inst_1 = Register(clk, add_acc_l_0[4], add_acc_l_1[2])
+    reg_acc_inst_2 = Register(clk, add_acc_l_1[2], add_acc_l_2[1])
+
+    reg_acc_inst_2 = Register(clk, add_acc_l_3, add_acc_l_4)
+    reg_acc_inst_2 = Register(clk, add_acc_l_4, add_acc_l_5)
+    reg_acc_inst_2 = Register(clk, add_acc_l_5, acc)
+
+
+    div_response = Signal(intbv(0, min=w0.min, max=w0.max))
+
+    div_inst = FracDiv(clk, wacc, acc, div_response)
+    sqrt_inst = sqrt(clk, div_response, deviation)
 
     return instances()
