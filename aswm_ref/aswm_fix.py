@@ -4,6 +4,7 @@ from skimage.util.shape import view_as_blocks
 from skimage import img_as_ubyte
 import numpy as np
 
+from aswm_ref.misc import sqrt
 
 def frac_mul(a, b):
     return (a * b) >> 16
@@ -78,7 +79,7 @@ def deviation(weights, window, mean, size):
         wacc = wacc + frac_mul(weights[i], ddiff)
         acc = acc + weights[i]
 
-    return frac_sqrt(frac_div(wacc, acc))
+    return sqrt(frac_div(wacc, acc))
 
 def aswm(imgn):
     img = img_as_ubyte(imgn, force_copy=True)

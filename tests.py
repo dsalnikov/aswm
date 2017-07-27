@@ -220,19 +220,24 @@ def deviation_testbench():
     clock = Signal(bool(0))
 
     x = [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
-    w = [Signal(modbv(0)[32:]) for _ in range(9)]
-    wmean = Signal(modbv(0x8eaaaa)[32:])
+    w = [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
+
+    debug =  [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
+
+    wmean = Signal(modbv(0x8106e2)[32:])
     dev = Signal(modbv(0)[32:])
 
-    dev_inst = Deviation(clock, wmean,
+    dev_inst = Deviation(clock,
                          w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8],
                          x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8],
-                         dev)
+                         wmean,
+                         dev,
+                         debug[0],debug[1],debug[2],debug[3],debug[4],debug[5],debug[6],debug[7],debug[8])
 
     half_period = delay(10)
 
-    mean_ref = 0x8eaaaa
-
+    mean_ref = 0x8106e2
+    dev_ref = 0
 
     @always(half_period)
     def clock_gen():
@@ -240,11 +245,14 @@ def deviation_testbench():
 
     @instance
     def stimulus():
-        for i in range(0, 1000):
+        for i in range(0, 50):
             yield clock.posedge
 
-            window = [254, 185, 71, 8, 222, 225, 230, 50, 51]
-            weights = [254, 185, 71, 8, 222, 225, 230, 50, 51]
+            window = [255, 0, 128, 129, 130, 127, 255, 255, 0]
+            weights = [1040, 1014, 111298, 737776, 128208, 60188, 1040, 1040, 1014]
+            # dev 2294
+            # acc 1042618
+            # wacc 83760562
 
             #for i in range(0, 9):
             #    window[i] = randint(0, 255)
@@ -271,7 +279,6 @@ def deviation_testbench():
 
 
             dev_ref = deviation(weights, window, mean_ref, 9)
-            print(dev_ref)
 
         for i in range(0, 6):
             yield clock.posedge
@@ -282,9 +289,15 @@ def deviation_testbench():
     @instance
     def monitor():
         # wait for pipeline filling
-        for i in range(0, 20):
+        for i in range(0,25):
             yield clock.posedge
-            print(dev)
+
+            print(i, dev)
+
+        for i in range(0,50):
+            yield clock.posedge
+
+            print(i, dev)
 
 
     return clock_gen, stimulus, dev_inst, monitor

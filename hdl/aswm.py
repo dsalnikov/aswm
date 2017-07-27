@@ -162,15 +162,18 @@ def Deviation(clk,
               w0, w1, w2, w3, w4, w5, w6, w7, w8,
               win0, win1, win2, win3, win4, win5, win6, win7, win8,
               wmean,
-              deviation):
+              deviation,
+              d0, d1, d2, d3, d4, d5, d6, d7, d8):
+
+    debug = [d0, d1, d2, d3, d4, d5, d6, d7, d8]
 
     win = [win0, win1, win2, win3, win4, win5, win6, win7, win8]
     w = [w0, w1, w2, w3, w4, w5, w6, w7, w8]
 
-    diff_l_0 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(9)]
+    diff_l_0 = [Signal(modbv(0x00020000, min=-2**32, max=2**32)) for i in range(9)]
     diff_l_1 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(9)]
     wdiff_l_0 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(9)]
-
+    # print(win)
     diff_inst_0 = []
     for i in range(9):
         diff_inst_0.append(Diff(clk, wmean, win[i], diff_l_0[i]))
@@ -181,8 +184,8 @@ def Deviation(clk,
 
 
     # w pipeline for 2clks
-    w_delay_l_0 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(9)]
-    w_delay_l_1 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(9)]
+    w_delay_l_0 = [Signal(modbv(0x00010000, min=w0.min, max=w0.max)) for i in range(9)]
+    w_delay_l_1 = [Signal(modbv(0x00010000, min=w0.min, max=w0.max)) for i in range(9)]
 
     w_delay_regs_inst_0 = []
     for i in range(9):
@@ -251,9 +254,9 @@ def Deviation(clk,
     reg_acc_inst_1 = Register(clk, add_acc_l_0[4], add_acc_l_1[2])
     reg_acc_inst_2 = Register(clk, add_acc_l_1[2], add_acc_l_2[1])
 
-    reg_acc_inst_2 = Register(clk, add_acc_l_3, add_acc_l_4)
-    reg_acc_inst_2 = Register(clk, add_acc_l_4, add_acc_l_5)
-    reg_acc_inst_2 = Register(clk, add_acc_l_5, acc)
+    reg_acc_inst_3 = Register(clk, add_acc_l_3, add_acc_l_4)
+    reg_acc_inst_4 = Register(clk, add_acc_l_4, add_acc_l_5)
+    reg_acc_inst_5 = Register(clk, add_acc_l_5, acc)
 
 
     div_response = Signal(modbv(1, min=w0.min, max=w0.max))

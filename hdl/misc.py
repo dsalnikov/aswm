@@ -50,7 +50,7 @@ def Pow2(clk, a, q):
 
     @always(clk.posedge)
     def Pow2Logic():
-        q.next = a * a
+        q.next = (a * a) >> 16
 
     return Pow2Logic
 
