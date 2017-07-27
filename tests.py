@@ -4,8 +4,8 @@ from skimage import img_as_ubyte
 
 from myhdl import *
 
-from aswm_ref.aswm_fix import weighted_mean, F16
-from hdl.aswm import WMean, WeightsEstimate
+from aswm_ref.aswm_fix import weighted_mean, F16, deviation
+from hdl.aswm import WMean, WeightsEstimate, Deviation
 from aswm_ref.misc import sqrt as sqrt_ref
 from hdl.aswm import WMean
 from hdl.misc import sqrt
@@ -216,17 +216,93 @@ def weights_estimate_testbench():
 
     return clock_gen, stimulus, w_inst, monitor
 
+def deviation_testbench():
+    clock = Signal(bool(0))
+
+    x = [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
+    w = [Signal(modbv(0)[32:]) for _ in range(9)]
+    wmean = Signal(modbv(0x8eaaaa)[32:])
+    dev = Signal(modbv(0)[32:])
+
+    dev_inst = Deviation(clock, wmean,
+                         w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8],
+                         x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8],
+                         dev)
+
+    half_period = delay(10)
+
+    mean_ref = 0x8eaaaa
+
+
+    @always(half_period)
+    def clock_gen():
+        clock.next = not clock
+
+    @instance
+    def stimulus():
+        for i in range(0, 1000):
+            yield clock.posedge
+
+            window = [254, 185, 71, 8, 222, 225, 230, 50, 51]
+            weights = [254, 185, 71, 8, 222, 225, 230, 50, 51]
+
+            #for i in range(0, 9):
+            #    window[i] = randint(0, 255)
+
+            x[0].next = int(window[0])
+            x[1].next = int(window[1])
+            x[2].next = int(window[2])
+            x[3].next = int(window[3])
+            x[4].next = int(window[4])
+            x[5].next = int(window[5])
+            x[6].next = int(window[6])
+            x[7].next = int(window[7])
+            x[8].next = int(window[8])
+
+            w[0].next = int(weights[0])
+            w[1].next = int(weights[1])
+            w[2].next = int(weights[2])
+            w[3].next = int(weights[3])
+            w[4].next = int(weights[4])
+            w[5].next = int(weights[5])
+            w[6].next = int(weights[6])
+            w[7].next = int(weights[7])
+            w[8].next = int(weights[8])
+
+
+            dev_ref = deviation(weights, window, mean_ref, 9)
+            print(dev_ref)
+
+        for i in range(0, 6):
+            yield clock.posedge
+
+
+        raise StopSimulation
+
+    @instance
+    def monitor():
+        # wait for pipeline filling
+        for i in range(0, 20):
+            yield clock.posedge
+            print(dev)
+
+
+    return clock_gen, stimulus, dev_inst, monitor
+
 
 if __name__ == "__main__":
-    print("testing sqrt ...")
-    sqrt_tb = sqrt_testbench()
-    Simulation(sqrt_tb).run()
+    # print("testing sqrt ...")
+    # sqrt_tb = sqrt_testbench()
+    # Simulation(sqrt_tb).run()
+    #
+    # print("testing wmean ...")
+    # wmean_tb = wmean_testbench()
+    # Simulation(wmean_tb).run()
+    #
+    # print("testing weights estimate ...")
+    # west_tb = weights_estimate_testbench()
+    # Simulation(west_tb).run()
 
-    print("testing wmean ...")
-    wmean_tb = wmean_testbench()
-    Simulation(wmean_tb).run()
-
-    print("testing weights estimate ...")
-    west_tb = weights_estimate_testbench()
-    Simulation(west_tb).run()
-
+    print("testing deviation ...")
+    dev_tb = deviation_testbench()
+    Simulation(dev_tb).run()

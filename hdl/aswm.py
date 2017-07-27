@@ -167,9 +167,9 @@ def Deviation(clk,
     win = [win0, win1, win2, win3, win4, win5, win6, win7, win8]
     w = [w0, w1, w2, w3, w4, w5, w6, w7, w8]
 
-    diff_l_0 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(9)]
-    diff_l_1 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(9)]
-    wdiff_l_0 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(9)]
+    diff_l_0 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(9)]
+    diff_l_1 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(9)]
+    wdiff_l_0 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(9)]
 
     diff_inst_0 = []
     for i in range(9):
@@ -181,8 +181,8 @@ def Deviation(clk,
 
 
     # w pipeline for 2clks
-    w_delay_l_0 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(9)]
-    w_delay_l_1 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(9)]
+    w_delay_l_0 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(9)]
+    w_delay_l_1 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(9)]
 
     w_delay_regs_inst_0 = []
     for i in range(9):
@@ -199,11 +199,11 @@ def Deviation(clk,
 
 
 
-    wacc = Signal(intbv(0, min=w0.min, max=w0.max))
+    wacc = Signal(modbv(1, min=w0.min, max=w0.max))
 
-    add_wacc_l_0 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(5)]
-    add_wacc_l_1 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(3)]
-    add_wacc_l_2 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(2)]
+    add_wacc_l_0 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(5)]
+    add_wacc_l_1 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(3)]
+    add_wacc_l_2 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(2)]
 
     adder_inst_0 = Adder(clk, wdiff_l_0[0], wdiff_l_0[1], add_wacc_l_0[0])
     adder_inst_1 = Adder(clk, wdiff_l_0[2], wdiff_l_0[3], add_wacc_l_0[1])
@@ -223,15 +223,15 @@ def Deviation(clk,
     reg_inst_2 = Register(clk, add_wacc_l_1[2], add_wacc_l_2[1])
 
 
-    acc = Signal(intbv(0, min=w0.min, max=w0.max))
+    acc = Signal(intbv(1, min=w0.min, max=w0.max))
 
-    add_acc_l_0 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(5)]
-    add_acc_l_1 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(3)]
-    add_acc_l_2 = [Signal(intbv(0, min=w0.min, max=w0.max)) for i in range(2)]
+    add_acc_l_0 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(5)]
+    add_acc_l_1 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(3)]
+    add_acc_l_2 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(2)]
 
-    add_acc_l_3 = Signal(intbv(0, min=w0.min, max=w0.max))
-    add_acc_l_4 = Signal(intbv(0, min=w0.min, max=w0.max))
-    add_acc_l_5 = Signal(intbv(0, min=w0.min, max=w0.max))
+    add_acc_l_3 = Signal(modbv(1, min=w0.min, max=w0.max))
+    add_acc_l_4 = Signal(modbv(1, min=w0.min, max=w0.max))
+    add_acc_l_5 = Signal(modbv(1, min=w0.min, max=w0.max))
 
     adder_acc_inst_0 = Adder(clk, w[0], w[1], add_acc_l_0[0])
     adder_acc_inst_1 = Adder(clk, w[2], w[3], add_acc_l_0[1])
@@ -256,7 +256,7 @@ def Deviation(clk,
     reg_acc_inst_2 = Register(clk, add_acc_l_5, acc)
 
 
-    div_response = Signal(intbv(0, min=w0.min, max=w0.max))
+    div_response = Signal(modbv(1, min=w0.min, max=w0.max))
 
     div_inst = FracDiv(clk, wacc, acc, div_response)
     sqrt_inst = sqrt(clk, div_response, deviation)
