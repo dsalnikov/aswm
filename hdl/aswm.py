@@ -162,10 +162,7 @@ def Deviation(clk,
               w0, w1, w2, w3, w4, w5, w6, w7, w8,
               win0, win1, win2, win3, win4, win5, win6, win7, win8,
               wmean,
-              deviation,
-              d0, d1, d2, d3, d4, d5, d6, d7, d8):
-
-    debug = [d0, d1, d2, d3, d4, d5, d6, d7, d8]
+              deviation):
 
     win = [win0, win1, win2, win3, win4, win5, win6, win7, win8]
     w = [w0, w1, w2, w3, w4, w5, w6, w7, w8]

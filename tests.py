@@ -231,8 +231,7 @@ def deviation_testbench():
                          w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8],
                          x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8],
                          wmean,
-                         dev,
-                         debug[0],debug[1],debug[2],debug[3],debug[4],debug[5],debug[6],debug[7],debug[8])
+                         dev)
 
     half_period = delay(10)
 
