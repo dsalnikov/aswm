@@ -256,7 +256,7 @@ def deviation_testbench():
                 window[i] = randint(0, 255)
 
             for i in range(0, 9):
-                window[i] = randint(0, 255)
+                weights[i] = randint(0, 255)
 
 
             x[0].next = int(window[0])
