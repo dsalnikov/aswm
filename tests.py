@@ -225,7 +225,7 @@ def deviation_testbench():
     debug =  [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
 
     wmean = Signal(modbv(0x8106e2)[32:])
-    dev = Signal(modbv(0)[32:])
+    dev = Signal(modbv(0)[64:])
 
     dev_inst = Deviation(clock,
                          w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8],
@@ -237,7 +237,11 @@ def deviation_testbench():
     half_period = delay(10)
 
     mean_ref = 0x8106e2
-    dev_ref = 0
+    dev_ref = []
+
+    window = [255, 0, 128, 129, 130, 127, 255, 255, 0]
+    weights = [1040, 1014, 111298, 737776, 128208, 60188, 1040, 1040, 1014]
+
 
     @always(half_period)
     def clock_gen():
@@ -245,17 +249,15 @@ def deviation_testbench():
 
     @instance
     def stimulus():
-        for i in range(0, 50):
+        for i in range(0, 1000):
             yield clock.posedge
 
-            window = [255, 0, 128, 129, 130, 127, 255, 255, 0]
-            weights = [1040, 1014, 111298, 737776, 128208, 60188, 1040, 1040, 1014]
-            # dev 2294
-            # acc 1042618
-            # wacc 83760562
+            for i in range(0, 9):
+                window[i] = randint(0, 255)
 
-            #for i in range(0, 9):
-            #    window[i] = randint(0, 255)
+            for i in range(0, 9):
+                window[i] = randint(0, 255)
+
 
             x[0].next = int(window[0])
             x[1].next = int(window[1])
@@ -278,9 +280,12 @@ def deviation_testbench():
             w[8].next = int(weights[8])
 
 
-            dev_ref = deviation(weights, window, mean_ref, 9)
+            tmp = deviation(weights, window, mean_ref, 9)
+            dev_ref.append(tmp)
 
-        for i in range(0, 6):
+
+        # wait for pipeline emptying
+        for i in range(0, 25):
             yield clock.posedge
 
 
@@ -292,29 +297,28 @@ def deviation_testbench():
         for i in range(0,25):
             yield clock.posedge
 
-            print(i, dev)
-
-        for i in range(0,50):
+        for i in range(0,1000):
             yield clock.posedge
 
-            print(i, dev)
+            ref = dev_ref.pop(0)
+            assert dev == ref, "ref != hdl deviation"
 
 
     return clock_gen, stimulus, dev_inst, monitor
 
 
 if __name__ == "__main__":
-    # print("testing sqrt ...")
-    # sqrt_tb = sqrt_testbench()
-    # Simulation(sqrt_tb).run()
-    #
-    # print("testing wmean ...")
-    # wmean_tb = wmean_testbench()
-    # Simulation(wmean_tb).run()
-    #
-    # print("testing weights estimate ...")
-    # west_tb = weights_estimate_testbench()
-    # Simulation(west_tb).run()
+    print("testing sqrt ...")
+    sqrt_tb = sqrt_testbench()
+    Simulation(sqrt_tb).run()
+
+    print("testing wmean ...")
+    wmean_tb = wmean_testbench()
+    Simulation(wmean_tb).run()
+
+    print("testing weights estimate ...")
+    west_tb = weights_estimate_testbench()
+    Simulation(west_tb).run()
 
     print("testing deviation ...")
     dev_tb = deviation_testbench()

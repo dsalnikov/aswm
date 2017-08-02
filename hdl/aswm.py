@@ -171,8 +171,8 @@ def Deviation(clk,
     w = [w0, w1, w2, w3, w4, w5, w6, w7, w8]
 
     diff_l_0 = [Signal(modbv(0x00020000, min=-2**32, max=2**32)) for i in range(9)]
-    diff_l_1 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(9)]
-    wdiff_l_0 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(9)]
+    diff_l_1 = [Signal(modbv(1, min=-2**64, max=2**64)) for i in range(9)]
+    wdiff_l_0 = [Signal(modbv(1, min=-2**64, max=2**64)) for i in range(9)]
     # print(win)
     diff_inst_0 = []
     for i in range(9):
@@ -202,11 +202,11 @@ def Deviation(clk,
 
 
 
-    wacc = Signal(modbv(1, min=w0.min, max=w0.max))
+    wacc = Signal(modbv(1, min=-2**64, max=2**64))
 
-    add_wacc_l_0 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(5)]
-    add_wacc_l_1 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(3)]
-    add_wacc_l_2 = [Signal(modbv(1, min=w0.min, max=w0.max)) for i in range(2)]
+    add_wacc_l_0 = [Signal(modbv(1, min=-2**64, max=2**64)) for i in range(5)]
+    add_wacc_l_1 = [Signal(modbv(1, min=-2**64, max=2**64)) for i in range(3)]
+    add_wacc_l_2 = [Signal(modbv(1, min=-2**64, max=2**64)) for i in range(2)]
 
     adder_inst_0 = Adder(clk, wdiff_l_0[0], wdiff_l_0[1], add_wacc_l_0[0])
     adder_inst_1 = Adder(clk, wdiff_l_0[2], wdiff_l_0[3], add_wacc_l_0[1])
