@@ -262,3 +262,69 @@ def Deviation(clk,
     sqrt_inst = sqrt(clk, div_response, deviation)
 
     return instances()
+
+
+def wmean_diff(clk, mean, new_mean, ready):
+
+    acc = Signal(intbv(1, min=mean.min, max=mean.max))
+    acc_abs = Signal(intbv(1, min=mean.min, max=mean.max))
+    cmp_acc = Signal(intbv(1, min=mean.min, max=mean.max))
+
+    @always(clk.posedge)
+    def SubLogic():
+        acc.next = a - b
+
+    @always(clk.posedge)
+    def AbsLogic():
+        if acc < 0:
+            acc_abs.next = -acc
+        else:
+            acc_abs.next = acc
+
+    @always(clk.posedge)
+    def CmpLogic():
+        cmp_acc.next = acc_abs - 0x2000
+
+    @always(clk.posedge)
+    def ReadyLogic():
+        if cmp_acc < 0:
+            ready.next = 1
+        else:
+            ready.next = 0
+
+    return instances()
+
+def loop_block(clk,
+               mean,
+               w0, w1, w2, w3, w4, w5, w6, w7, w8,
+               win0, win1, win2, win3, win4, win5, win6, win7, win8,
+               wout0, wout1, wout2, wout3, wout4, wout5, wout6, wout7, wout8,
+               bypass):
+
+    wmean = Signal(intbv(1, min=mean.min, max=mean.max))
+
+    wmean_inst_0 = WMean(clk,
+                         win0, win1, win2, win3, win4, win5, win6, win7, win8,
+                         w0, w1, w2, w3, w4, w5, w6, w7, w8,
+                         wmean)
+
+
+    w_est_int_0 = WeightsEstimate(clk,
+                                  wmean,
+                                  win0, win1, win2, win3, win4, win5, win6, win7, win8,
+                                  wout0, wout1, wout2, wout3, wout4, wout5, wout6, wout7, wout8)
+
+
+    mean_pipe_0 = [Signal(modbv(1, min=mean.min, max=mean.max)) for i in range(8)]
+    mean_pipe_regs_inst_0 = []
+    mean_pipe_regs_inst_0.append(Register(clk, mean, mean_pipe_0[7]))
+
+    for i in range(0, 9):
+        mean_pipe_regs_inst_0.append(Register(clk, mean_pipe_0[i+1], mean_pipe_0[i]))
+
+    mean_diff_inst_0 = wmean_diff(clk, mean_pipe_0[0], wmean, bypass)
+
+    #TODO: implement bypass logic here
+
+    return instances()
+
