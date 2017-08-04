@@ -266,13 +266,13 @@ def Deviation(clk,
 
 def wmean_diff(clk, mean, new_mean, ready):
 
-    acc = Signal(intbv(1, min=mean.min, max=mean.max))
-    acc_abs = Signal(intbv(1, min=mean.min, max=mean.max))
-    cmp_acc = Signal(intbv(1, min=mean.min, max=mean.max))
+    acc = Signal(modbv(1, min=mean.min, max=mean.max))
+    acc_abs = Signal(modbv(1, min=mean.min, max=mean.max))
+    cmp_acc = Signal(modbv(1, min=mean.min, max=mean.max))
 
     @always(clk.posedge)
     def SubLogic():
-        acc.next = a - b
+        acc.next = mean - new_mean
 
     @always(clk.posedge)
     def AbsLogic():
@@ -299,6 +299,7 @@ def loop_block(clk,
                w0, w1, w2, w3, w4, w5, w6, w7, w8,
                win0, win1, win2, win3, win4, win5, win6, win7, win8,
                wout0, wout1, wout2, wout3, wout4, wout5, wout6, wout7, wout8,
+               new_mean,
                bypass):
 
     wmean = Signal(intbv(1, min=mean.min, max=mean.max))
@@ -308,6 +309,7 @@ def loop_block(clk,
                          w0, w1, w2, w3, w4, w5, w6, w7, w8,
                          wmean)
 
+    #TODO: pipeline win for 8clks here
 
     w_est_int_0 = WeightsEstimate(clk,
                                   wmean,
@@ -319,7 +321,7 @@ def loop_block(clk,
     mean_pipe_regs_inst_0 = []
     mean_pipe_regs_inst_0.append(Register(clk, mean, mean_pipe_0[7]))
 
-    for i in range(0, 9):
+    for i in range(0, 7):
         mean_pipe_regs_inst_0.append(Register(clk, mean_pipe_0[i+1], mean_pipe_0[i]))
 
     mean_diff_inst_0 = wmean_diff(clk, mean_pipe_0[0], wmean, bypass)
@@ -328,3 +330,17 @@ def loop_block(clk,
 
     return instances()
 
+
+if __name__ == "__main__":
+    clk = Signal(bool(0))
+    wmean = Signal(intbv(0)[32:])
+    deviation = Signal(intbv(0)[16:])
+
+    x = [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
+    w = [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
+
+    inst = toVHDL(Deviation, clk,
+                  w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8],
+                  x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8],
+                  wmean,
+                  deviation)

@@ -5,7 +5,7 @@ from skimage import img_as_ubyte
 from myhdl import *
 
 from aswm_ref.aswm_fix import weighted_mean, F16, deviation
-from hdl.aswm import WMean, WeightsEstimate, Deviation
+from hdl.aswm import *
 from aswm_ref.misc import sqrt as sqrt_ref
 from hdl.aswm import WMean
 from hdl.misc import sqrt
@@ -305,20 +305,121 @@ def deviation_testbench():
 
     return clock_gen, stimulus, dev_inst, monitor
 
+def aswm_testbench():
+    path = "img/lena.png"
+    img = imread(path, as_grey=True)
+    imgn = random_noise(img, mode='s&p', amount=0.75)
+    img = img_as_ubyte(imgn)
+
+    clock = Signal(bool(0))
+
+    x = [Signal(intbv(0, min=0, max=2**8)) for _ in range(9)]
+    w = [Signal(intbv(0x00010000, min=0, max=2**32)) for _ in range(9)]
+    wout = [Signal(intbv(0x00010000, min=0, max=2**32)) for _ in range(9)]
+    bypass = Signal(bool(0))
+
+    wmean = Signal(intbv(0, min=0, max=2**32))
+    wmean_new = Signal(intbv(0, min=0, max=2**32))
+
+    cmp_1 = loop_block(clock,
+                       wmean,
+                       w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8],
+                       x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8],
+                       wout[0], wout[1], wout[2], wout[3], wout[4], wout[5], wout[6], wout[7], wout[8],
+                       wmean_new,
+                       bypass)
+
+
+    half_period = delay(10)
+
+    cols, rows = img.shape
+
+    ref_aswm = []
+
+    @always(half_period)
+    def clock_gen():
+        clock.next = not clock
+
+    @instance
+    def stimulus():
+        for i in range(1, cols-1):
+            for j in range(1, rows-1):
+                yield clock.posedge
+
+                x[0].next = int(img[i - 1, j - 1])
+                x[1].next = int(img[i, j - 1])
+                x[2].next = int(img[i + 1, j - 1])
+                x[3].next = int(img[i - 1, j])
+                x[4].next = int(img[i, j])
+                x[5].next = int(img[i + 1, j])
+                x[6].next = int(img[i - 1, j + 1])
+                x[7].next = int(img[i, j + 1])
+                x[8].next = int(img[i + 1, j + 1])
+
+
+
+                window = img[i - 1:i + 2, j - 1:j + 2].reshape(-1).tolist()
+                weights = [0x00010000, 0x00010000, 0x00010000,
+                           0x00010000, 0x00010000, 0x00010000,
+                           0x00010000, 0x00010000, 0x00010000]
+
+                mean = weighted_mean(weights, window, 9)
+
+                for l in range(0, 9):
+                    _x = abs((window[l] << 16) - mean) + F16(0.1)
+                    weights[l] = ((F16(1.0) << 16) / _x) << 1
+
+                new_mean = weighted_mean(weights, window, 9)
+                diff = abs(new_mean - mean)
+                bp = False
+                if diff < F16(0.1):
+                    bp = True
+
+                ref_aswm.append([bp, new_mean, weights[:]])
+
+        # wait for pipeline emptying
+        for i in range(0, 8):
+            yield clock.posedge
+
+        raise StopSimulation
+
+    @instance
+    def monitor():
+        # wait for pipeline filling
+        for i in range(0, 5+8):
+           yield clock.posedge
+
+
+        for i in range(1, cols - 1):
+            for j in range(1, rows - 1):
+                yield clock.posedge
+
+                ref = ref_aswm.pop(0)
+                print(ref)
+                print([bypass, wmean_new, wout])
+
+                #assert ref == wmean, "ref != wnean"
+
+    return clock_gen, stimulus, cmp_1, monitor
+
 
 if __name__ == "__main__":
-    print("testing sqrt ...")
-    sqrt_tb = sqrt_testbench()
-    Simulation(sqrt_tb).run()
+    # print("testing sqrt ...")
+    # sqrt_tb = sqrt_testbench()
+    # Simulation(sqrt_tb).run()
+    #
+    # print("testing wmean ...")
+    # wmean_tb = wmean_testbench()
+    # Simulation(wmean_tb).run()
+    #
+    # print("testing weights estimate ...")
+    # west_tb = weights_estimate_testbench()
+    # Simulation(west_tb).run()
+    #
+    # print("testing deviation ...")
+    # dev_tb = deviation_testbench()
+    # Simulation(dev_tb).run()
 
-    print("testing wmean ...")
-    wmean_tb = wmean_testbench()
-    Simulation(wmean_tb).run()
-
-    print("testing weights estimate ...")
-    west_tb = weights_estimate_testbench()
-    Simulation(west_tb).run()
-
-    print("testing deviation ...")
-    dev_tb = deviation_testbench()
-    Simulation(dev_tb).run()
+    print("testing aswm ,,,")
+    aswm_tb = aswm_testbench()
+    Simulation(aswm_tb).run()
