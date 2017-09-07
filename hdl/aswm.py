@@ -75,6 +75,7 @@ def WMean(clk,
     # Calculation of weights sum in 4clks
     # Init signals with 1 to prevent div by 0
     acc = Signal(intbv(1, min=w0.min, max=w0.max))
+    acc_0 = Signal(intbv(1, min=w0.min, max=w0.max))
 
     wsum_l_0 = [Signal(intbv(1, min=w0.min, max=w0.max)) for i in range(5)]
     wsum_l_1 = [Signal(intbv(1, min=w0.min, max=w0.max)) for i in range(3)]
@@ -90,12 +91,14 @@ def WMean(clk,
 
     adder_inst_14 = Adder(clk, wsum_l_1[0], wsum_l_1[1], wsum_l_2[0])
 
-    adder_inst_15 = Adder(clk, wsum_l_2[0], wsum_l_2[1], acc)
+    adder_inst_15 = Adder(clk, wsum_l_2[0], wsum_l_2[1], acc_0)
 
     # Registers to pipeline calculations
     reg_inst_3 = Register(clk, w[8], wsum_l_0[4])
     reg_inst_4 = Register(clk, wsum_l_0[4], wsum_l_1[2])
     reg_inst_5 = Register(clk, wsum_l_1[2], wsum_l_2[1])
+
+    reg_inst_6 = Register(clk, acc_0, acc)
 
     # Calculate weighted mean
     div_inst = FracDiv(clk, wacc, acc, wmean)
@@ -110,12 +113,12 @@ def WeightsEstimate(clk,
     x = [x0, x1, x2, x3, x4, x5, x6, x7, x8]
     w = [w0, w1, w2, w3, w4, w5, w6, w7, w8]
 
-    sub_0 = [Signal(modbv(0, min=w0.min, max=w0.max)) for i in range(9)]
-    sub_1 = [Signal(modbv(0, min=w0.min, max=w0.max)) for i in range(9)]
-    sub_2 = [Signal(modbv(0, min=w0.min, max=w0.max)) for i in range(9)]
-    signs_0 = [Signal(modbv(0)) for i in range(9)]
+    sub_0 = [Signal(modbv(0, min=0, max=2**32)) for i in range(9)]
+    sub_1 = [Signal(modbv(0, min=0, max=2**32)) for i in range(9)]
+    sub_2 = [Signal(modbv(0, min=0, max=2**32)) for i in range(9)]
+    signs_0 = [Signal(bool(0)) for i in range(9)]
 
-    add_0 = [Signal(modbv(0x2000, min=w0.min, max=w0.max)) for i in range(9)]
+    add_0 = [Signal(modbv(0x2000, min=0, max=2**32)) for i in range(9)]
 
     sub_inst = []
     for i in range(9):
@@ -125,13 +128,13 @@ def WeightsEstimate(clk,
     for i in range(9):
         mux_inst.append(Mux2(clk, signs_0[i], sub_0[i], sub_1[i], sub_2[i]))
 
-    add_const = Signal(modbv(0x1999, min=w0.min, max=w0.max))
+    add_const = Signal(intbv(0x1999, min=0, max=2**32))
 
     add_inst = []
     for i in range(9):
         add_inst.append(Adder(clk, sub_2[i], add_const, add_0[i]))
 
-    div_num = Signal(intbv(0x10000, min=w0.min, max=w0.max))
+    div_num = Signal(intbv(0x10000, min=0, max=2**32))
 
     div_inst = []
     for i in range(9):
@@ -276,14 +279,14 @@ def wmean_diff(clk, mean, new_mean, ready):
 
     @always(clk.posedge)
     def AbsLogic():
-        if acc < 0:
+        if acc & 0x80008000:
             acc_abs.next = -acc
         else:
             acc_abs.next = acc
 
     @always(clk.posedge)
     def ReadyLogic():
-        if acc_abs < 65536:
+        if acc_abs < 6553:
             ready.next = 1
         else:
             ready.next = 0
@@ -292,6 +295,7 @@ def wmean_diff(clk, mean, new_mean, ready):
 
 def loop_block(clk,
                mean,
+               bypass_in,
                w0, w1, w2, w3, w4, w5, w6, w7, w8,
                win0, win1, win2, win3, win4, win5, win6, win7, win8,
                wout0, wout1, wout2, wout3, wout4, wout5, wout6, wout7, wout8,
@@ -300,10 +304,43 @@ def loop_block(clk,
 
     wmean = Signal(intbv(1, min=mean.min, max=mean.max))
 
-    win = [win0, win1, win2, win3, win4, win5, win6, win7, win8]
-    weights_out = [wout0, wout1, wout2, wout3, wout4, wout5, wout6, wout7, wout8]
+    # win = [win0, win1, win2, win3, win4, win5, win6, win7, win8]
+    # weights_out = [wout0, wout1, wout2, wout3, wout4, wout5, wout6, wout7, wout8]
+    # weights_in = [w0, w1, w2, w3, w4, w5, w6, w7, w8]
 
 
+
+    win = [Signal(modbv(1, min=win0.min, max=win0.max)) for _ in range(9)]
+    weights_out = [Signal(modbv(1, min=wout0.min, max=wout0.max)) for _ in range(9)]
+    weights_in = [Signal(modbv(1, min=w0.min, max=w0.max)) for _ in range(9)]
+
+    win[0] = win0
+    win[1] = win1
+    win[2] = win2
+    win[3] = win3
+    win[4] = win4
+    win[5] = win5
+    win[6] = win6
+    win[7] = win7
+    win[8] = win8
+
+    weights_in[0] = w0
+    weights_in[1] = w1
+    weights_in[2] = w2
+    weights_in[3] = w3
+    weights_in[4] = w4
+    weights_in[5] = w5
+    weights_in[6] = w6
+    weights_in[7] = w7
+    weights_in[8] = w8
+
+    bypass_pipe_0 = [Signal(bool(0)) for _ in range(14)]
+    bypass_0 = Signal(bool(0))
+
+    bypass_regs_inst = []
+    bypass_regs_inst.append(Register(clk, bypass_in, bypass_pipe_0[13]))
+    for i in range(0, 13):
+        bypass_regs_inst.append(Register(clk, bypass_pipe_0[i+1], bypass_pipe_0[i]))
 
     # pipeline wout for 8clks here
     wout_pipe_0 = [Signal(modbv(1, min=w0.min, max=w0.max)) for _ in range(9)]
@@ -314,25 +351,32 @@ def loop_block(clk,
     wout_pipe_5 = [Signal(modbv(1, min=w0.min, max=w0.max)) for _ in range(9)]
     wout_pipe_6 = [Signal(modbv(1, min=w0.min, max=w0.max)) for _ in range(9)]
     wout_pipe_7 = [Signal(modbv(1, min=w0.min, max=w0.max)) for _ in range(9)]
+    wout_pipe_8 = [Signal(modbv(1, min=w0.min, max=w0.max)) for _ in range(9)]
+    wout_pipe_9 = [Signal(modbv(1, min=w0.min, max=w0.max)) for _ in range(9)]
 
     win_pipe_0 = [Signal(intbv(0, min=0, max=2**8)) for _ in range(9)]
     win_pipe_1 = [Signal(intbv(0, min=0, max=2**8)) for _ in range(9)]
     win_pipe_2 = [Signal(intbv(0, min=0, max=2**8)) for _ in range(9)]
     win_pipe_3 = [Signal(intbv(0, min=0, max=2**8)) for _ in range(9)]
-    win_pipe_4 = [Signal(intbv(0, min=0, max=2**8)) for _ in range(9)]
-    win_pipe_5 = [Signal(intbv(0, min=0, max=2**8)) for _ in range(9)]
-    win_pipe_6 = [Signal(intbv(0, min=0, max=2**8)) for _ in range(9)]
-    win_pipe_7 = [Signal(intbv(0, min=0, max=2**8)) for _ in range(9)]
 
+    weigths_in_pipe_0 = [Signal(intbv(0, min=w0.min, max=w0.max)) for _ in range(9)]
+    weigths_in_pipe_1 = [Signal(intbv(0, min=w0.min, max=w0.max)) for _ in range(9)]
+    weigths_in_pipe_2 = [Signal(intbv(0, min=w0.min, max=w0.max)) for _ in range(9)]
+    weigths_in_pipe_3 = [Signal(intbv(0, min=w0.min, max=w0.max)) for _ in range(9)]
+    weigths_in_pipe_4 = [Signal(intbv(0, min=w0.min, max=w0.max)) for _ in range(9)]
+    weigths_in_pipe_5 = [Signal(intbv(0, min=w0.min, max=w0.max)) for _ in range(9)]
+    weigths_in_pipe_6 = [Signal(intbv(0, min=w0.min, max=w0.max)) for _ in range(9)]
+    weigths_in_pipe_7 = [Signal(intbv(0, min=w0.min, max=w0.max)) for _ in range(9)]
+    weigths_in_pipe_8 = [Signal(intbv(0, min=w0.min, max=w0.max)) for _ in range(9)]
+    weigths_in_pipe_9 = [Signal(intbv(0, min=w0.min, max=w0.max)) for _ in range(9)]
+    weigths_in_pipe_10 = [Signal(intbv(0, min=w0.min, max=w0.max)) for _ in range(9)]
+    weigths_in_pipe_11 = [Signal(intbv(0, min=w0.min, max=w0.max)) for _ in range(9)]
+    weigths_in_pipe_12 = [Signal(intbv(0, min=w0.min, max=w0.max)) for _ in range(9)]
 
     win_pipe_inst_0 = []
     win_pipe_inst_1 = []
     win_pipe_inst_2 = []
     win_pipe_inst_3 = []
-    win_pipe_inst_4 = []
-    win_pipe_inst_5 = []
-    win_pipe_inst_6 = []
-    win_pipe_inst_7 = []
 
     wout_pipe_inst_0 = []
     wout_pipe_inst_1 = []
@@ -342,25 +386,40 @@ def loop_block(clk,
     wout_pipe_inst_5 = []
     wout_pipe_inst_6 = []
     wout_pipe_inst_7 = []
+    wout_pipe_inst_8 = []
+
+
+    weigths_in_pipe_inst = []
 
     for i in range(0, 9):
         wout_pipe_inst_0.append(Register(clk, wout_pipe_0[i], wout_pipe_1[i]))
         wout_pipe_inst_1.append(Register(clk, wout_pipe_1[i], wout_pipe_2[i]))
         wout_pipe_inst_2.append(Register(clk, wout_pipe_2[i], wout_pipe_3[i]))
-        wout_pipe_inst_3.append(Register(clk, wout_pipe_3[i], weights_out[i]))
-        # wout_pipe_inst_4.append(Register(clk, wout_pipe_4[i], wout_pipe_5[i]))
-        # wout_pipe_inst_5.append(Register(clk, wout_pipe_5[i], wout_pipe_6[i]))
-        # wout_pipe_inst_6.append(Register(clk, wout_pipe_6[i], wout_pipe_7[i]))
+        wout_pipe_inst_3.append(Register(clk, wout_pipe_3[i], wout_pipe_4[i]))
+        wout_pipe_inst_4.append(Register(clk, wout_pipe_4[i], wout_pipe_5[i]))
+        wout_pipe_inst_5.append(Register(clk, wout_pipe_5[i], wout_pipe_6[i]))
+        wout_pipe_inst_6.append(Register(clk, wout_pipe_6[i], wout_pipe_7[i]))
+        wout_pipe_inst_7.append(Register(clk, wout_pipe_7[i], wout_pipe_8[i]))
+        wout_pipe_inst_8.append(Register(clk, wout_pipe_8[i], wout_pipe_9[i]))
 
         win_pipe_inst_0.append(Register(clk, win[i],        win_pipe_0[i]))
         win_pipe_inst_1.append(Register(clk, win_pipe_0[i], win_pipe_1[i]))
         win_pipe_inst_2.append(Register(clk, win_pipe_1[i], win_pipe_2[i]))
         win_pipe_inst_3.append(Register(clk, win_pipe_2[i], win_pipe_3[i]))
-        win_pipe_inst_4.append(Register(clk, win_pipe_3[i], win_pipe_4[i]))
-        win_pipe_inst_5.append(Register(clk, win_pipe_4[i], win_pipe_5[i]))
-        win_pipe_inst_6.append(Register(clk, win_pipe_5[i], win_pipe_6[i]))
-        win_pipe_inst_7.append(Register(clk, win_pipe_6[i], win_pipe_7[i]))
 
+        weigths_in_pipe_inst.append(Register(clk, weights_in[i], weigths_in_pipe_0[i]))
+        weigths_in_pipe_inst.append(Register(clk, weigths_in_pipe_0[i], weigths_in_pipe_1[i]))
+        weigths_in_pipe_inst.append(Register(clk, weigths_in_pipe_1[i], weigths_in_pipe_2[i]))
+        weigths_in_pipe_inst.append(Register(clk, weigths_in_pipe_2[i], weigths_in_pipe_3[i]))
+        weigths_in_pipe_inst.append(Register(clk, weigths_in_pipe_3[i], weigths_in_pipe_4[i]))
+        weigths_in_pipe_inst.append(Register(clk, weigths_in_pipe_4[i], weigths_in_pipe_5[i]))
+        weigths_in_pipe_inst.append(Register(clk, weigths_in_pipe_5[i], weigths_in_pipe_6[i]))
+        weigths_in_pipe_inst.append(Register(clk, weigths_in_pipe_6[i], weigths_in_pipe_7[i]))
+        weigths_in_pipe_inst.append(Register(clk, weigths_in_pipe_7[i], weigths_in_pipe_8[i]))
+        weigths_in_pipe_inst.append(Register(clk, weigths_in_pipe_8[i], weigths_in_pipe_9[i]))
+        weigths_in_pipe_inst.append(Register(clk, weigths_in_pipe_9[i], weigths_in_pipe_10[i]))
+        weigths_in_pipe_inst.append(Register(clk, weigths_in_pipe_10[i], weigths_in_pipe_11[i]))
+        weigths_in_pipe_inst.append(Register(clk, weigths_in_pipe_11[i], weigths_in_pipe_12[i]))
 
 
     w_est_int_0 = WeightsEstimate(clk,
@@ -369,39 +428,141 @@ def loop_block(clk,
                                   wout_pipe_0[0], wout_pipe_0[1], wout_pipe_0[2], wout_pipe_0[3], wout_pipe_0[4], wout_pipe_0[5], wout_pipe_0[6], wout_pipe_0[7], wout_pipe_0[8])
 
     # pipeline for old mean value
-    mean_pipe_0 = [Signal(modbv(1, min=mean.min, max=mean.max)) for _ in range(13)]
+    mean_pipe_0 = [Signal(modbv(1, min=mean.min, max=mean.max)) for _ in range(10)]
     mean_pipe_regs_inst_0 = []
-    mean_pipe_regs_inst_0.append(Register(clk, mean, mean_pipe_0[12]))
+    mean_pipe_regs_inst_0.append(Register(clk, mean, mean_pipe_0[9]))
 
-    for i in range(0, 12):
+    for i in range(0, 9):
         mean_pipe_regs_inst_0.append(Register(clk, mean_pipe_0[i+1], mean_pipe_0[i]))
 
     wmean_inst_0 = WMean(clk,
-                         win_pipe_5[0], win_pipe_5[1], win_pipe_5[2], win_pipe_5[3], win_pipe_5[4], win_pipe_5[5], win_pipe_5[6], win_pipe_5[7], win_pipe_5[8],
+                         win_pipe_3[0], win_pipe_3[1], win_pipe_3[2], win_pipe_3[3], win_pipe_3[4], win_pipe_3[5], win_pipe_3[6], win_pipe_3[7], win_pipe_3[8],
                          wout_pipe_0[0], wout_pipe_0[1], wout_pipe_0[2], wout_pipe_0[3], wout_pipe_0[4], wout_pipe_0[5], wout_pipe_0[6], wout_pipe_0[7], wout_pipe_0[8],
                          wmean)
 
-    mean_diff_inst_0 = wmean_diff(clk, mean_pipe_0[0], wmean, bypass)
+    mean_diff_inst_0 = wmean_diff(clk, mean_pipe_0[0], wmean, bypass_0)
 
-    wmean_pipe_0 = [Signal(modbv(1, min=mean.min, max=mean.max)) for _ in range(3)]
+    wmean_pipe_0 = [Signal(modbv(1, min=mean.min, max=mean.max)) for _ in range(4)]
     wmean_pipe_reg_0 = Register(clk, wmean, wmean_pipe_0[0])
     wmean_pipe_reg_1 = Register(clk, wmean_pipe_0[0], wmean_pipe_0[1])
-    wmean_pipe_reg_2 = Register(clk, wmean_pipe_0[1], new_mean)
+    wmean_pipe_reg_2 = Register(clk, wmean_pipe_0[1], wmean_pipe_0[2])
+    wmean_pipe_reg_3 = Register(clk, wmean_pipe_0[2], new_mean)
+
+    @always(clk.posedge)
+    def BypassLogic():
+        bypass.next = bypass_0 or bypass_pipe_0[0]
+
+        if bypass_pipe_0[0]:
+            wout0.next = weigths_in_pipe_12[0]
+            wout1.next = weigths_in_pipe_12[1]
+            wout2.next = weigths_in_pipe_12[2]
+            wout3.next = weigths_in_pipe_12[3]
+            wout4.next = weigths_in_pipe_12[4]
+            wout5.next = weigths_in_pipe_12[5]
+            wout6.next = weigths_in_pipe_12[6]
+            wout7.next = weigths_in_pipe_12[7]
+            wout8.next = weigths_in_pipe_12[8]
+        else:
+            wout0.next = wout_pipe_9[0]
+            wout1.next = wout_pipe_9[1]
+            wout2.next = wout_pipe_9[2]
+            wout3.next = wout_pipe_9[3]
+            wout4.next = wout_pipe_9[4]
+            wout5.next = wout_pipe_9[5]
+            wout6.next = wout_pipe_9[6]
+            wout7.next = wout_pipe_9[7]
+            wout8.next = wout_pipe_9[8]
+
 
 
     return instances()
 
 
+def Sub2(clk, a, b, q, nq, sign):
+
+    @always(clk.posedge)
+    def SubLogic():
+        sub = modbv(0, min=-2**32, max=2**32)
+        sub[:] = (a << 16) - b
+        q.next = sub
+        sign.next = sub[31]
+        nq.next = b - (a << 16)
+
+    return SubLogic
+
+
 if __name__ == "__main__":
-    clk = Signal(bool(0))
-    wmean = Signal(intbv(0)[32:])
-    deviation = Signal(intbv(0)[16:])
 
-    x = [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
-    w = [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
+    # clk = Signal(bool(0))
+    # wmean = Signal(intbv(0)[32:])
+    # deviation = Signal(intbv(0)[16:])
+    #
+    # x = [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
+    # w = [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
+    #
+    # inst = toVHDL(WMean, clk,
+    #               x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8],
+    #               w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8],
+    #               wmean)
 
-    inst = toVHDL(Deviation, clk,
+
+    # clk = Signal(bool(0))
+    # wmean = Signal(intbv(0)[32:])
+    # deviation = Signal(intbv(0)[16:])
+    #
+    # x = [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
+    # w = [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
+    #
+    # inst = toVHDL(Deviation, clk,
+    #               w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8],
+    #               x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8],
+    #               wmean,
+    #               deviation)
+
+
+    # clk = Signal(bool(0))
+    # s = Signal(bool(0))
+    #
+    # wmean = Signal(intbv(0)[32:])
+    # deviation = Signal(intbv(0)[16:])
+    #
+    # x = [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
+    # w = [Signal(modbv(0x00010000)[32:]) for _ in range(9)]
+    #
+    # inst = toVHDL(WeightsEstimate, clk,
+    #               wmean,
+    #               x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8],
+    #               w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8])
+
+
+    clock = Signal(bool(0))
+
+    x = [Signal(intbv(0, min=0, max=2**8)) for _ in range(9)]
+    w = [Signal(modbv(0)[32:]) for _ in range(9)]
+
+    wout = [Signal(modbv(0)[32:]) for _ in range(9)]
+
+    bypass = Signal(bool(0))
+    bypass_in = Signal(bool(0))
+
+    wmean = Signal(intbv(0, min=0, max=2**32))
+    wmean_new = Signal(modbv(0, min=0, max=2**32))
+
+    inst = toVHDL(loop_block,
+                  clock,
+                  wmean,
+                  bypass_in,
                   w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8],
                   x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8],
-                  wmean,
-                  deviation)
+                  wout[0], wout[1], wout[2], wout[3], wout[4], wout[5], wout[6], wout[7], wout[8],
+                  wmean_new,
+                  bypass)
+
+# def loop_block(clk,
+#                mean,
+#                bypass_in,
+#                w0, w1, w2, w3, w4, w5, w6, w7, w8,
+#                win0, win1, win2, win3, win4, win5, win6, win7, win8,
+#                wout0, wout1, wout2, wout3, wout4, wout5, wout6, wout7, wout8,
+#                new_mean,
+#                bypass):

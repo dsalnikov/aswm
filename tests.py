@@ -72,6 +72,21 @@ def wmean_testbench():
                 weights = [0x00010000, 0x00010000, 0x00010000,
                            0x00010000, 0x00010000, 0x00010000,
                            0x00010000, 0x00010000, 0x00010000]
+                for i in range(0, 9):
+                    weights[i] = randint(0, 2**16)
+
+
+                w[0].next = int(weights[0])
+                w[1].next = int(weights[1])
+                w[2].next = int(weights[2])
+                w[3].next = int(weights[3])
+                w[4].next = int(weights[4])
+                w[5].next = int(weights[5])
+                w[6].next = int(weights[6])
+                w[7].next = int(weights[7])
+                w[8].next = int(weights[8])
+
+
                 ref_res = weighted_mean(weights, win, 9)
                 ref_wmean.append(ref_res)
 
@@ -94,7 +109,7 @@ def wmean_testbench():
                 # get reference
                 ref = ref_wmean.pop(0)
 
-                assert ref == wmean, "ref != wnean"
+                assert ref == wmean, "ref != wmean | {} != {}".format(ref, wmean)
 
     return clock_gen, stimulus, cmp_1, monitor
 
@@ -314,15 +329,18 @@ def aswm_testbench():
     clock = Signal(bool(0))
 
     x = [Signal(intbv(0, min=0, max=2**8)) for _ in range(9)]
-    w = [Signal(intbv(0x00010000, min=0, max=2**32)) for _ in range(9)]
+    w = [Signal(modbv(0)[32:]) for _ in range(9)]
+
     wout = [Signal(intbv(0x00010000, min=0, max=2**32)) for _ in range(9)]
     bypass = Signal(bool(0))
+    bypass_in = Signal(bool(0))
 
     wmean = Signal(intbv(0, min=0, max=2**32))
-    wmean_new = Signal(intbv(0, min=0, max=2**32))
+    wmean_new = Signal(modbv(0, min=0, max=2**32))
 
     cmp_1 = loop_block(clock,
                        wmean,
+                       bypass_in,
                        w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8],
                        x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8],
                        wout[0], wout[1], wout[2], wout[3], wout[4], wout[5], wout[6], wout[7], wout[8],
@@ -346,24 +364,35 @@ def aswm_testbench():
             for j in range(1, rows-1):
                 yield clock.posedge
 
-                x[0].next = int(img[i - 1, j - 1])
-                x[1].next = int(img[i, j - 1])
-                x[2].next = int(img[i + 1, j - 1])
-                x[3].next = int(img[i - 1, j])
-                x[4].next = int(img[i, j])
-                x[5].next = int(img[i + 1, j])
-                x[6].next = int(img[i - 1, j + 1])
-                x[7].next = int(img[i, j + 1])
-                x[8].next = int(img[i + 1, j + 1])
-
-
-
                 window = img[i - 1:i + 2, j - 1:j + 2].reshape(-1).tolist()
                 weights = [0x00010000, 0x00010000, 0x00010000,
                            0x00010000, 0x00010000, 0x00010000,
                            0x00010000, 0x00010000, 0x00010000]
 
+                x[0].next = int(window[0])
+                x[1].next = int(window[1])
+                x[2].next = int(window[2])
+                x[3].next = int(window[3])
+                x[4].next = int(window[4])
+                x[5].next = int(window[5])
+                x[6].next = int(window[6])
+                x[7].next = int(window[7])
+                x[8].next = int(window[8])
+
+                w[0].next = int(weights[0])
+                w[1].next = int(weights[1])
+                w[2].next = int(weights[2])
+                w[3].next = int(weights[3])
+                w[4].next = int(weights[4])
+                w[5].next = int(weights[5])
+                w[6].next = int(weights[6])
+                w[7].next = int(weights[7])
+                w[8].next = int(weights[8])
+
+
                 mean = weighted_mean(weights, window, 9)
+
+                wmean.next = int(mean)
 
                 for l in range(0, 9):
                     _x = abs((window[l] << 16) - mean) + F16(0.1)
@@ -375,10 +404,10 @@ def aswm_testbench():
                 if diff < F16(0.1):
                     bp = True
 
-                ref_aswm.append([bp, new_mean, weights[:]])
+                ref_aswm.append([bp, new_mean, weights[:], window[:]])
 
         # wait for pipeline emptying
-        for i in range(0, 8):
+        for i in range(0, 15):
             yield clock.posedge
 
         raise StopSimulation
@@ -386,40 +415,39 @@ def aswm_testbench():
     @instance
     def monitor():
         # wait for pipeline filling
-        for i in range(0, 5+8):
+        for i in range(0, 15):
            yield clock.posedge
-
 
         for i in range(1, cols - 1):
             for j in range(1, rows - 1):
                 yield clock.posedge
 
                 ref = ref_aswm.pop(0)
-                print(ref)
-                print([bypass, wmean_new, wout])
 
-                #assert ref == wmean, "ref != wnean"
+                assert ref[0] == bypass, "ref bypass != bypass | window: {} ".format(ref[3])
+                assert ref[1] == wmean_new, "ref wmean != wmean | {} {}".format(ref[1], wmean_new)
+                assert ref[2] == wout, "ref wout != wout | {} != {}".format(ref[2], wout)
 
     return clock_gen, stimulus, cmp_1, monitor
 
 
 if __name__ == "__main__":
-    # print("testing sqrt ...")
-    # sqrt_tb = sqrt_testbench()
-    # Simulation(sqrt_tb).run()
-    #
-    # print("testing wmean ...")
-    # wmean_tb = wmean_testbench()
-    # Simulation(wmean_tb).run()
-    #
-    # print("testing weights estimate ...")
-    # west_tb = weights_estimate_testbench()
-    # Simulation(west_tb).run()
-    #
-    # print("testing deviation ...")
-    # dev_tb = deviation_testbench()
-    # Simulation(dev_tb).run()
+    print("testing sqrt ...")
+    sqrt_tb = sqrt_testbench()
+    Simulation(sqrt_tb).run()
 
-    print("testing aswm ,,,")
+    print("testing wmean ...")
+    wmean_tb = wmean_testbench()
+    Simulation(wmean_tb).run()
+
+    print("testing weights estimate ...")
+    west_tb = weights_estimate_testbench()
+    Simulation(west_tb).run()
+
+    print("testing deviation ...")
+    dev_tb = deviation_testbench()
+    Simulation(dev_tb).run()
+
+    print("testing aswm loop block ...")
     aswm_tb = aswm_testbench()
     Simulation(aswm_tb).run()
