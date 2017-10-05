@@ -59,3 +59,20 @@ def aswm(imgn):
                 img[i, j] = w[4]
 
     return img
+
+
+def myfilt(imgn, th):
+    img = img_as_ubyte(imgn, force_copy=True)
+
+    cols, rows = img.shape
+
+    for i in range(1, cols - 1):
+        for j in range(1, rows - 1):
+            window = img[i - 1:i + 2, j - 1:j + 2].reshape(-1).tolist()
+
+            w = sorted(window)
+
+            if abs(w[4] - img[i, j]) > th:
+                img[i, j] = w[4]
+
+    return img
