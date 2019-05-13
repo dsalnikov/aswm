@@ -1,10 +1,10 @@
-from skimage.io import imread
+from skimage.io import imread, imsave
 from skimage.util import random_noise
 from skimage.util.shape import view_as_blocks
 from skimage import img_as_ubyte
 import matplotlib.pyplot as plt
 from matplotlib.legend_handler import HandlerLine2D
-
+import csv
 import numpy as np
 
 from aswm_ref.aswm import aswm, myfilt
@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
 
     path = "img/lena.png"
-    img = imread(path, as_grey=True)
+    img = imread(path, as_gray=True)
     img = img_as_ubyte(img)
 
     noise_levels = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90]
@@ -55,17 +55,24 @@ if __name__ == "__main__":
 
     for i in noise_levels:
         imgn = random_noise(img, mode='s&p', amount=i)
+        
+        imsave("img/out/lena_n{}.png".format(i), imgn)
 
         imgs = aswm(imgn)
 
         ps, ss = compare(img, imgs)
         psnr_aswm.append(ps)
         ssim_aswm.append(ss)
+        
+        imsave("img/out_aswm/lena_n{}_psnr{}_ssim{}_.png".format(i, ps, ss), imgs)
 
         for th in th_levels:
             imgs2 = myfilt(imgn,  th / 50.0)
 
             ps, ss = compare(img, imgs2)
+
+            imsave("img/out_our/lena_n{}_th{}_psnr{}_ssim{}_.png".format(i, th, ps, ss), imgs2)
+
             psnr_my[th].append(ps)
             ssim_my[th].append(ss)
 
@@ -76,23 +83,31 @@ if __name__ == "__main__":
         plt.plot(noise_levels, psnr_my[th], label="Our {}".format(th))
 
 
-    print("psnr:")
-    print("aswm:", psnr_aswm)
-    for th in th_levels:
-        print("our {}:".format(th), psnr_my[th])
+    header = ['noise level', 'aswm psnr', 'aswm ssim', 'aswm fix psnr', 'aswm fix ssim']
 
-    print("ssim:")
-    print("aswm:", ssim_aswm)
     for th in th_levels:
-        print("our {}:".format(th), ssim_my[th])
+        header.append('our_{} psnr'.format(th))
+        header.append('our_{} ssim'.format(th))
+
+    with open('statistics.csv', 'w') as f:
+        w = csv.DictWriter(f, header)
+
+        w.writeheader()
+
+        for i in range(0, len(noise_levels)):
+            row = {}
+            row["noise level"] = noise_levels[i]
+            row["aswm psnr"] = psnr_aswm[i]
+            row["aswm ssim"] = ssim_aswm[i]
+            row["aswm fix psnr"] = psnr_aswm[i]
+            row["aswm fix ssim"] = ssim_aswm[i]
+
+            for th in th_levels:
+                row['our_{} psnr'.format(th)] = psnr_my[th][i]
+                row['our_{} ssim'.format(th)] = ssim_my[th][i]
+
+            w.writerow(row)
 
     plt.legend(loc='upper right')
 
-    # psnr_my["aswm"] = psnr_aswm
-    # savemat("myfilt_stats_psnr.mat", psnr_my)
-    #
-    # ssim_my["aswm"] = ssim_aswm
-    # savemat("myfilt_stats_ssim.mat", ssim_my)
-
-
-    plt.show()
+    plt.savefig("statistics.png")
