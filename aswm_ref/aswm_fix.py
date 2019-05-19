@@ -10,7 +10,8 @@ def frac_mul(a, b):
     return (a * b) >> 16
 
 def frac_div(a, b):
-    return ((a << 15) / b) << 1
+    #print(a, b, type(a), type(b))
+    return ((a << 15) // b) << 1
 
 def frac_sqrt(num):
     """

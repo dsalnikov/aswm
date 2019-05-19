@@ -31,7 +31,7 @@ def aswm(imgn):
     img = img_as_ubyte(imgn, force_copy=True)
 
     cols, rows = img.shape
-
+    values = []
     for i in range(1, cols - 1):
         for j in range(1, rows - 1):
             weights = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
@@ -57,8 +57,11 @@ def aswm(imgn):
             if abs(window[4] - mean) > dev * 6.5:
                 w = sorted(window)
                 img[i, j] = w[4]
+            else:
+                w = sorted(window)
+                values.append(w[4] - img[i, j])
 
-    return img
+    return img, values
 
 
 def myfilt(imgn, th):

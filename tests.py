@@ -131,7 +131,7 @@ def sqrt_testbench():
 
     @instance
     def stimulus():
-        for i in range(0, 1000):
+        for i in range(0, 1):
             yield clock.posedge
 
             val =  randint(0, 2**32)
@@ -205,7 +205,7 @@ def weights_estimate_testbench():
 
             for l in range(0, 9):
                 x_ref = abs((window[l] << 16) - mean_ref) + F16(0.1)
-                weights[l] = ((F16(1.0) << 16) / x_ref) << 1
+                weights[l] = ((F16(1.0) << 16) // x_ref) << 1
 
             ref_weights.append(weights[:])
 
@@ -396,7 +396,7 @@ def aswm_testbench():
 
                 for l in range(0, 9):
                     _x = abs((window[l] << 16) - mean) + F16(0.1)
-                    weights[l] = ((F16(1.0) << 16) / _x) << 1
+                    weights[l] = ((F16(1.0) << 16) // _x) << 1
 
                 new_mean = weighted_mean(weights, window, 9)
                 diff = abs(new_mean - mean)
@@ -433,7 +433,8 @@ def aswm_testbench():
 
 if __name__ == "__main__":
     print("testing sqrt ...")
-    sqrt_tb = sqrt_testbench()
+    #sqrt_tb = sqrt_testbench()
+    sqrt_tb = traceSignals(sqrt_testbench)
     Simulation(sqrt_tb).run()
 
     print("testing wmean ...")

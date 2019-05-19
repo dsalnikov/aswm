@@ -58,7 +58,11 @@ if __name__ == "__main__":
         
         imsave("img/out/lena_n{}.png".format(i), imgn)
 
-        imgs = aswm(imgn)
+        imgs, values = aswm(imgn)
+
+        with open('out_aswm_n{}.txt'.format(i), 'w') as f:
+            for item in values:
+                f.write("%s\n" % item)
 
         ps, ss = compare(img, imgs)
         psnr_aswm.append(ps)
